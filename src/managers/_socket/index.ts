@@ -88,7 +88,7 @@ export class SocketService {
             const new_socket = this.createSocket(socket, {});
             new_socket.join(this.room_lobby);
 
-            const current_players = [...this.room_game.getSockets().values()].map((s) => { username: s.user.username });
+            const current_players = [...this.room_game.getSockets().values()].map((s) => s.user);
             socket.emit('socket:connected:client', { id: socket.id, players: current_players })
 
             socket.on("player:join", (data: { id: string, username: string, position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number } }) => {
