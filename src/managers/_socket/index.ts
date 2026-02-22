@@ -88,27 +88,55 @@ export class SocketService {
             const new_socket = this.createSocket(socket, {});
             new_socket.join(this.room_lobby);
 
-            const current_players = [...this.room_game.getSockets().values()].map((s) => s.user);
+            const current_players = [...this.room_game.getSockets().values()].map((s) => { username: s.user.username });
             socket.emit('socket:connected:client', { id: socket.id, players: current_players })
 
-            socket.on("player:join", (data: { id: string, username: string }) => {
+            socket.on("player:join", (data: { id: string, username: string, position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number } }) => {
                 const socket_instance = this.ISockets.get(socket.id);
-                if (!socket_instance) {
-                    return;
-                }
+                if (!socket_instance) return;
 
-                socket_instance.updateUser({ id: data.id, username: data.username });
+                socket_instance.updateUser({
+                    id: data.id,
+                    username: data.username,
+                    position: data.position,
+                    rotation: data.rotation
+                });
                 socket_instance.join(this.room_game);
                 Logs.logged(socket_instance);
 
-                this.ISockets.forEach((s) => {
-                    if (s.id !== socket.id) {
-                        s.emit("player:joined", {
-                            id: socket_instance.user.id,
-                            username: socket_instance.user.username
-                        });
-                    }
-                })
+                this.room_game.sendEvent({
+                    event: "player:joined",
+                    data: {
+                        id: socket_instance.user.id!,
+                        username: socket_instance.user.username!,
+                        position: data.position,
+                        rotation: data.rotation
+                    },
+                    ignoreList: [socket_instance]
+                });
+
+                socket_instance.emit("player:join", {
+                    players: [...this.room_game.getSockets().values()]
+                        .filter((s) => s.id !== socket_instance.id)
+                        .map((s) => s.user)
+                });
+            })
+
+            socket.on("player:move", (data: { id: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }) => {
+                const socket_instance = this.ISockets.get(socket.id);
+                if (!socket_instance) return;
+
+                socket_instance.updateUser({ position: data.position, rotation: data.rotation });
+
+                this.room_game.sendEvent({
+                    event: "player:moved",
+                    data: {
+                        id: socket_instance.user.id!,
+                        position: data.position,
+                        rotation: data.rotation
+                    },
+                    ignoreList: [socket_instance]
+                });
             })
 
             socket.on("disconnect", async () => {

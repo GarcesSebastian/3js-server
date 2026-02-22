@@ -4,6 +4,8 @@ import type { Room } from "./Room.js";
 export interface UserSocket {
     id?: string;
     username?: string;
+    position?: { x: number, y: number, z: number } | undefined;
+    rotation?: { x: number, y: number, z: number } | undefined;
 }
 
 export class ISocket {
@@ -30,8 +32,8 @@ export class ISocket {
         room.leave(this);
     }
 
-    public updateUser(user: UserSocket): void {
-        this.user = user;
+    public updateUser(user: Partial<UserSocket>): void {
+        this.user = { ...this.user, ...user };
     }
 
     public disconnection(): void {
