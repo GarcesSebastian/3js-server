@@ -7,6 +7,7 @@ import chalk from "chalk";
 import { IndexConfig } from "../../configuration/index.config.js";
 import type { PayloadJoin } from "./types/socket-user.js";
 import { Projectile, type DeathEventData, type HitEventData, type ProjectileProps } from "./_instances/Projectile.js";
+import { Random } from "../../utils/random.js";
 
 export class SocketService {
     public static instance: SocketService | null = null;
@@ -14,10 +15,9 @@ export class SocketService {
     private ISockets: Map<string, ISocket> = new Map<string, ISocket>();
     public projectiles: Map<string, Projectile> = new Map<string, Projectile>();
 
-    public room_lobby: Room; // Room to all users
+    public room_lobby: Room;
     public room_game: Room;
 
-    // Protección por IP
     private connectionsByIP: Map<string, Set<string>> = new Map();
     private eventCounts: Map<string, Map<string, number[]>> = new Map();
 
@@ -217,6 +217,32 @@ export class SocketService {
                     data: {
                         id: projectile.id,
                         ownerId: projectile.ownerId
+                    }
+                });
+            })
+
+            socket.on("player:respawn", () => {
+                const socket_instance = this.ISockets.get(socket.id);
+                if (!socket_instance) return;
+
+                socket_instance.user.health = socket_instance.user.maxHealth || 100;
+                socket_instance.user.position = { x: Random.range(-300, 300), y: 0, z: Random.range(-300, 300) };
+
+                this.room_game.sendEvent({
+                    event: "player:health",
+                    data: {
+                        id: socket_instance.user.id,
+                        health: socket_instance.user.health,
+                        maxHealth: socket_instance.user.maxHealth || 100
+                    }
+                });
+
+                this.room_game.sendEvent({
+                    event: "player:moved",
+                    data: {
+                        id: socket_instance.user.id!,
+                        position: socket_instance.user.position,
+                        rotation: socket_instance.user.rotation
                     }
                 });
             })
