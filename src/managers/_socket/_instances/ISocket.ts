@@ -8,6 +8,8 @@ export interface UserSocket {
     maxHealth?: number;
     position?: { x: number, y: number, z: number } | undefined;
     rotation?: { x: number, y: number, z: number } | undefined;
+    isMoving?: boolean | undefined;
+    isJumping?: boolean | undefined;
 }
 
 export class ISocket {

@@ -156,18 +156,25 @@ export class SocketService {
                 });
             })
 
-            socket.on("player:move", (data: { id: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number } }) => {
+            socket.on("player:move", (data: { id: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }, isMoving?: boolean, isJumping?: boolean }) => {
                 const socket_instance = this.ISockets.get(socket.id);
                 if (!socket_instance) return;
 
-                socket_instance.updateUser({ position: data.position, rotation: data.rotation });
+                socket_instance.updateUser({
+                    position: data.position,
+                    rotation: data.rotation,
+                    isMoving: data.isMoving,
+                    isJumping: data.isJumping
+                });
 
                 this.room_game.sendEvent({
                     event: "player:moved",
                     data: {
                         id: socket_instance.user.id!,
                         position: data.position,
-                        rotation: data.rotation
+                        rotation: data.rotation,
+                        isMoving: data.isMoving,
+                        isJumping: data.isJumping
                     },
                     ignoreList: [socket_instance]
                 });
