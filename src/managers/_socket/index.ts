@@ -5,11 +5,14 @@ import { Room } from "./_instances/Room.js";
 import { ISocket, type UserSocket } from "./_instances/ISocket.js";
 import chalk from "chalk";
 import { IndexConfig } from "../../configuration/index.config.js";
+import type { PayloadJoin } from "./types/socket-user.js";
+import { Projectile, type DeathEventData, type ProjectileProps } from "./_instances/Projectile.js";
 
 export class SocketService {
     public static instance: SocketService | null = null;
     private socket: SocketServer;
     private ISockets: Map<string, ISocket> = new Map<string, ISocket>();
+    public projectiles: Map<string, Projectile> = new Map<string, Projectile>();
 
     public room_lobby: Room; // Room to all users
     public room_game: Room;
@@ -91,15 +94,12 @@ export class SocketService {
             const current_players = [...this.room_game.getSockets().values()].map((s) => s.user);
             socket.emit('socket:connected:client', { id: socket.id, players: current_players })
 
-            socket.on("player:join", (data: { id: string, username: string, position?: { x: number, y: number, z: number }, rotation?: { x: number, y: number, z: number } }) => {
+            socket.on("player:join", (data: PayloadJoin) => {
                 const socket_instance = this.ISockets.get(socket.id);
                 if (!socket_instance) return;
 
                 socket_instance.updateUser({
-                    id: data.id,
-                    username: data.username,
-                    position: data.position,
-                    rotation: data.rotation
+                    ...data
                 });
                 socket_instance.join(this.room_game);
                 Logs.logged(socket_instance);
@@ -107,18 +107,52 @@ export class SocketService {
                 this.room_game.sendEvent({
                     event: "player:joined",
                     data: {
-                        id: socket_instance.user.id!,
-                        username: socket_instance.user.username!,
-                        position: data.position,
-                        rotation: data.rotation
+                        ...socket_instance.user
                     },
                     ignoreList: [socket_instance]
                 });
 
+                const current_projectiles = [...this.projectiles.values()].map((p) => p.getStats());
                 socket_instance.emit("player:join", {
                     players: [...this.room_game.getSockets().values()]
                         .filter((s) => s.id !== socket_instance.id)
-                        .map((s) => s.user)
+                        .map((s) => s.user),
+                    projectiles: current_projectiles
+                });
+            })
+
+            socket.on("projectile:create", (data: ProjectileProps) => {
+                const socket_instance = this.ISockets.get(socket.id);
+                if (!socket_instance) return;
+
+                const projectile = new Projectile({ ...data, createdAt: Date.now() });
+                this.projectiles.set(projectile.id, projectile);
+
+                this.room_game.sendEvent({
+                    event: "projectile:created",
+                    data: {
+                        ...projectile.getStats()
+                    },
+                    ignoreList: [socket_instance]
+                });
+            })
+
+            socket.on("projectile:death", (data: DeathEventData) => {
+                const socket_instance = this.ISockets.get(socket.id);
+                if (!socket_instance) return;
+
+                const projectile = this.projectiles.get(data.id);
+                if (!projectile) return;
+
+                projectile.updateDeath();
+
+                this.room_game.sendEvent({
+                    event: "projectile:died",
+                    data: {
+                        id: projectile.id,
+                        ownerId: projectile.ownerId
+                    },
+                    ignoreList: [socket_instance]
                 });
             })
 
