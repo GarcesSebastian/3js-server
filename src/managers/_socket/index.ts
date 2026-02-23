@@ -177,14 +177,21 @@ export class SocketService {
                 const shooter = this.ISockets.get(socket.id);
                 if (!shooter) return;
 
-                const target = [...this.ISockets.values()].find(s => s.user.id === data.targetId);
-                if (!target) return;
+                const target = this.room_game.getSocketByUserId(data.targetId)[0];
+                if (!target) {
+                    console.log(chalk.yellow(`Hit target not found: ${data.targetId}`));
+                    return;
+                }
 
                 const projectile = this.projectiles.get(data.id);
-                if (!projectile) return;
+                if (!projectile) {
+                    console.log(chalk.yellow(`Hit projectile not found: ${data.id}`));
+                    return;
+                }
 
                 const damage = projectile.damage || 10;
-                target.user.health = Math.max(0, (target.user.health || 100) - damage);
+                const oldHealth = target.user.health || 100;
+                target.user.health = Math.max(0, oldHealth - damage);
 
                 this.room_game.sendEvent({
                     event: "player:health",
