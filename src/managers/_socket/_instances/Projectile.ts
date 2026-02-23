@@ -19,6 +19,12 @@ export interface MoveEventData {
     rotation: { x: number, y: number, z: number };
 }
 
+export interface HitEventData {
+    id: string;
+    ownerId: string;
+    targetId: string;
+}
+
 export interface DeathEventData {
     id: string;
     ownerId: string;

@@ -6,7 +6,7 @@ import { ISocket, type UserSocket } from "./_instances/ISocket.js";
 import chalk from "chalk";
 import { IndexConfig } from "../../configuration/index.config.js";
 import type { PayloadJoin } from "./types/socket-user.js";
-import { Projectile, type DeathEventData, type ProjectileProps } from "./_instances/Projectile.js";
+import { Projectile, type DeathEventData, type HitEventData, type ProjectileProps } from "./_instances/Projectile.js";
 
 export class SocketService {
     public static instance: SocketService | null = null;
@@ -170,6 +170,47 @@ export class SocketService {
                         rotation: data.rotation
                     },
                     ignoreList: [socket_instance]
+                });
+            })
+
+            socket.on("projectile:hit", (data: HitEventData) => {
+                const shooter = this.ISockets.get(socket.id);
+                if (!shooter) return;
+
+                const target = [...this.ISockets.values()].find(s => s.user.id === data.targetId);
+                if (!target) return;
+
+                const projectile = this.projectiles.get(data.id);
+                if (!projectile) return;
+
+                const damage = projectile.damage || 10;
+                target.user.health = Math.max(0, (target.user.health || 100) - damage);
+
+                this.room_game.sendEvent({
+                    event: "player:health",
+                    data: {
+                        id: target.user.id,
+                        health: target.user.health,
+                        maxHealth: target.user.maxHealth || 100
+                    }
+                });
+
+                if (target.user.health <= 0) {
+                    this.room_game.sendEvent({
+                        event: "player:died",
+                        data: {
+                            id: target.user.id
+                        }
+                    });
+                }
+
+                projectile.destroy();
+                this.room_game.sendEvent({
+                    event: "projectile:died",
+                    data: {
+                        id: projectile.id,
+                        ownerId: projectile.ownerId
+                    }
                 });
             })
 

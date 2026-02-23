@@ -4,6 +4,8 @@ import type { Room } from "./Room.js";
 export interface UserSocket {
     id?: string;
     username?: string;
+    health?: number;
+    maxHealth?: number;
     position?: { x: number, y: number, z: number } | undefined;
     rotation?: { x: number, y: number, z: number } | undefined;
 }
