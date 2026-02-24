@@ -8,6 +8,7 @@ import { IndexConfig } from "../../configuration/index.config.js";
 import type { PayloadJoin } from "./types/socket-user.js";
 import { Projectile, type DeathEventData, type HitEventData, type ProjectileProps } from "./_instances/Projectile.js";
 import { Random } from "../../utils/random.js";
+import type { PlayerMoveData } from "./types/socket-events.js";
 
 export class SocketService {
     public static instance: SocketService | null = null;
@@ -156,7 +157,7 @@ export class SocketService {
                 });
             })
 
-            socket.on("player:move", (data: { id: string, position: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }, isMoving?: boolean, isJumping?: boolean }) => {
+            socket.on("player:move", (data: PlayerMoveData) => {
                 const socket_instance = this.ISockets.get(socket.id);
                 if (!socket_instance) return;
 
@@ -164,6 +165,7 @@ export class SocketService {
                     position: data.position,
                     rotation: data.rotation,
                     isMoving: data.isMoving,
+                    isSprinting: data.isSprinting,
                     isJumping: data.isJumping
                 });
 
@@ -174,6 +176,7 @@ export class SocketService {
                         position: data.position,
                         rotation: data.rotation,
                         isMoving: data.isMoving,
+                        isSprinting: data.isSprinting,
                         isJumping: data.isJumping
                     },
                     ignoreList: [socket_instance]

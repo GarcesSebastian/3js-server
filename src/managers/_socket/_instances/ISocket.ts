@@ -9,6 +9,7 @@ export interface UserSocket {
     position?: { x: number, y: number, z: number } | undefined;
     rotation?: { x: number, y: number, z: number } | undefined;
     isMoving?: boolean | undefined;
+    isSprinting?: boolean | undefined;
     isJumping?: boolean | undefined;
 }
 
