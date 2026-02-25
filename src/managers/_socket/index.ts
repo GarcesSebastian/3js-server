@@ -8,7 +8,7 @@ import { IndexConfig } from "../../configuration/index.config.js";
 import type { PayloadJoin } from "./types/socket-user.js";
 import { Projectile, type DeathEventData, type HitEventData, type ProjectileProps } from "./_instances/Projectile.js";
 import { Random } from "../../utils/random.js";
-import type { PlayerMoveData } from "./types/socket-events.js";
+import type { PlayerAnimateData, PlayerMoveData } from "./types/socket-events.js";
 
 export class SocketService {
     public static instance: SocketService | null = null;
@@ -178,6 +178,24 @@ export class SocketService {
                         isMoving: data.isMoving,
                         isSprinting: data.isSprinting,
                         isJumping: data.isJumping
+                    },
+                    ignoreList: [socket_instance]
+                });
+            })
+
+            socket.on("player:animate", (data: PlayerAnimateData) => {
+                const socket_instance = this.ISockets.get(socket.id);
+                if (!socket_instance) return;
+
+                this.room_game.sendEvent({
+                    event: "player:animated",
+                    data: {
+                        id: data.id,
+                        animation: data.animation,
+                        atPercent: data.atPercent,
+                        pauseFor: data.pauseFor,
+                        speedBefore: data.speedBefore,
+                        speedAfter: data.speedAfter
                     },
                     ignoreList: [socket_instance]
                 });
